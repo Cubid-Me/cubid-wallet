@@ -1,5 +1,7 @@
 import type { Preview } from "@storybook/react";
 import '../src/index.css';
+import "@near-wallet-selector/modal-ui/styles.css"
+
 
 const preview: Preview = {
   parameters: {
