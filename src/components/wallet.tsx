@@ -25,6 +25,7 @@ interface WalletInfo {
     type: 'connected' | 'created';
     timestamp: number;
     public_key?: string;
+    is_generated_via_lib: boolean;
 }
 
 interface WalletStates {
@@ -100,7 +101,7 @@ const WalletInfoDisplay = ({ address, explorerUrl, type, walletType, timestamp }
 };
 
 // Component for wallet connection options
-const AddWalletOptions = ({ onConnectWallet, onCreateWallet, type, loading }: any) => (
+const AddWalletOptions = ({ onConnectWallet, onCreateWallet, type, loading, hasGeneratedWallet }: any) => (
     <div className="ui-flex ui-flex-col ui-gap-4 ui-mt-4">
         {type === 'evm' ? (
             <div className="ui-group ui-relative">
@@ -118,14 +119,15 @@ const AddWalletOptions = ({ onConnectWallet, onCreateWallet, type, loading }: an
                 </div>
             </button>
         )}
-
-        <button
-            onClick={onCreateWallet}
-            disabled={loading === 'creating'}
-            className="ui-w-full ui-py-3 ui-bg-gradient-to-r ui-from-blue-600 ui-to-purple-600 hover:ui-from-blue-700 hover:ui-to-purple-700 ui-text-white ui-font-medium ui-rounded-xl ui-transition-all ui-duration-300 ui-transform hover:ui-scale-[1.02] disabled:ui-opacity-50 disabled:ui-cursor-not-allowed"
-        >
-            {loading === 'creating' ? 'Creating Account...' : 'Create New On-Chain Account'}
-        </button>
+        {!hasGeneratedWallet && (
+            <button
+                onClick={onCreateWallet}
+                disabled={loading === 'creating'}
+                className="ui-w-full ui-py-3 ui-bg-gradient-to-r ui-from-blue-600 ui-to-purple-600 hover:ui-from-blue-700 hover:ui-to-purple-700 ui-text-white ui-font-medium ui-rounded-xl ui-transition-all ui-duration-300 ui-transform hover:ui-scale-[1.02] disabled:ui-opacity-50 disabled:ui-cursor-not-allowed"
+            >
+                {loading === 'creating' ? 'Creating Account...' : 'Create New On-Chain Account'}
+            </button>
+        )}
     </div>
 );
 
@@ -164,7 +166,8 @@ export const WalletComponent = (props: WalletComp) => {
                 await api.post('https://passport.cubid.me/api/wallet/save', {
                     dapp_uid: user.uuid,
                     chain: type,
-                    public_key: item.public_key || item.address
+                    public_key: item.public_key || item.address,
+                    is_generated_via_lib: item.is_generated_via_lib
                 });
             }));
         } catch (error) {
@@ -197,7 +200,8 @@ export const WalletComponent = (props: WalletComp) => {
                     evm: [...prev.evm, {
                         address: evmAddress,
                         type: 'connected',
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        is_generated_via_lib: false
                     }]
                 };
             });
@@ -216,7 +220,8 @@ export const WalletComponent = (props: WalletComp) => {
                         near: [...prev.near, {
                             address: wallet.accountId!,
                             type: 'connected',
-                            timestamp: Date.now()
+                            timestamp: Date.now(),
+                            is_generated_via_lib: false
                         }]
                     };
                 });
@@ -250,7 +255,8 @@ export const WalletComponent = (props: WalletComp) => {
                         address: public_address,
                         type: 'created',
                         timestamp: Date.now(),
-                        public_key: public_address
+                        public_key: public_address,
+                        is_generated_via_lib: true
                     }
                 ]
             }));
@@ -271,7 +277,7 @@ export const WalletComponent = (props: WalletComp) => {
                 <div className="ui-flex ui-flex-col ui-gap-4">
                     <div className="ui-flex ui-justify-between ui-items-center">
                         <h2 className="ui-text-2xl ui-font-bold ui-bg-gradient-to-r ui-from-blue-600 ui-to-purple-600 ui-bg-clip-text ui-text-transparent">
-                            {inEvm ? 'EVM Wallets' : 'NEAR Protocol'}
+                            Web3 Accounts
                         </h2>
                         <button
                             onClick={() => setShowAddOptions(true)}
@@ -299,6 +305,7 @@ export const WalletComponent = (props: WalletComp) => {
                             onConnectWallet={() => wallet.signIn()}
                             onCreateWallet={createOnChainAccount}
                             loading={loading}
+                            hasGeneratedWallet={[...sortedWallets.filter(item => item.is_generated_via_lib)].length !== 0}
                         />
                     )}
                 </div>

@@ -23,7 +23,6 @@ const config: StorybookConfig = {
       plugins: [
         nodePolyfills({
           include: [
-            'crypto',
             'stream',
             'util',
             'buffer',
@@ -32,32 +31,28 @@ const config: StorybookConfig = {
             'process',
             'http'
           ],
+          exclude: ['crypto'], // Explicitly exclude crypto polyfill
           globals: {
             Buffer: true,
           },
-          protocolImports: true, // Critical for Node.js-like protocol handling
+          protocolImports: true,
         }),
       ],
       define: {
-        // Ensure `process.env` is available globally
         'process.env': JSON.stringify({}),
         'process.browser': true,
       },
       resolve: {
         alias: {
-          // Force explicit resolution paths
-          crypto: 'crypto-browserify',
           stream: 'stream-browserify',
           util: 'util',
           buffer: 'buffer',
-           'http':"http",
+          'http': "http",
           process: 'process/browser',
         },
       },
       optimizeDeps: {
         include: [
-          // Pre-bundle critical dependencies
-          'crypto-browserify',
           'stream-browserify',
           'util',
           'buffer',
@@ -65,7 +60,6 @@ const config: StorybookConfig = {
           'http'
         ],
         esbuildOptions: {
-          // Target specific global variables
           define: {
             global: 'globalThis',
           },
@@ -74,4 +68,5 @@ const config: StorybookConfig = {
     });
   },
 };
+
 export default config;
