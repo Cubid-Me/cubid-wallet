@@ -1,32 +1,27 @@
 {
   "name": "cubid-wallet",
-  "version": "0.0.0",
-  "type": "module",
+  "version": "0.3.3",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/ui.es.js",
-      "require": "./dist/ui.umd.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     },
-    "./styles.css": {
-      "require": "./dist/styles.css",
-      "default": "./dist/styles.css"
-    }
+    "./styles.css": "./dist/styles.css"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && npm run build:css",
+    "build": "npm run build:lib && npm run build:css",
+    "build:lib": "tsup ./index.tsx --dts --format esm,cjs",
     "build:css": "tailwindcss -m -i ./src/tailwind-entry.css -o ./dist/styles.css",
+    "dev": "tsup --watch",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
     "storybook": "concurrently \"npm run storybook:css\" \"storybook dev -p 6006\"",
     "storybook:css": "tailwindcss -w -i ./src/tailwind-entry.css -o ./src/index.css",
     "build-storybook": "concurrently \"npm run build-storybook:css\" \"storybook build\"",
-    "build-storybook:css": "tailwindcss -m -i ./src/tailwind-entry.css -o ./src/index.css",
-    "prepublishOnly": "npm run build"
+    "build-storybook:css": "tailwindcss -m -i ./src/tailwind-entry.css -o ./src/index.css"
   },
   "peerDependencies": {
     "react": "^18.2.0",
@@ -34,6 +29,8 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^1.3.3",
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.0",
     "@storybook/addon-essentials": "^8.0.9",
     "@storybook/addon-interactions": "^8.0.9",
     "@storybook/addon-links": "^8.0.9",
@@ -48,18 +45,26 @@
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
+    "crypto-browserify": "^3.12.1",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "eslint-plugin-storybook": "^0.8.0",
+    "https-browserify": "^1.0.0",
+    "node-stdlib-browser": "^1.3.0",
     "storybook": "^8.0.9",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
     "tailwindcss": "^3.4.3",
+    "tsup": "^8.3.6",
     "typescript": "^5.2.2",
+    "util": "^0.12.5",
     "vite": "^5.2.0",
     "vite-plugin-dts": "^3.9.0",
     "vite-plugin-node-polyfills": "^0.23.0"
   },
   "dependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/runtime": "^7.26.7",
     "@near-wallet-selector/core": "^8.9.15",
     "@near-wallet-selector/here-wallet": "^8.9.15",
@@ -75,16 +80,19 @@
     "buffer": "^6.0.3",
     "cbor-web": "^10.0.3",
     "crypto-browserify": "^3.12.1",
-    "cubid-sdk": "^1.8.6",
+    "cubid-sdk": "^1.9.3",
     "http": "0.0.1-security",
     "lucide-react": "^0.474.0",
     "near-api-js": "^5.0.1",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
     "url": "^0.11.4",
-    "util": "^0.12.5",
     "vite": "^6.0.11",
     "vm-browserify": "^1.1.2",
     "wagmi": "^2.14.9"
-  }
+  },
+  "sideEffects": [
+    "**/*.css"
+  ]
 }

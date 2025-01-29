@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Import necessary dependencies
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Wallet } from '../lib/nearWalletConfig';
@@ -14,7 +15,9 @@ export interface WalletComp {
     user_id: string;
     dapp_id: string;
     api_key: string;
-    onAppShare: (share: string) => {}
+    onAppShare: (share: string) => void
+    onEVMWallet?: (wallets: string[]) => void
+    onNearWallet?: (wallets: string[]) => void
 }
 
 interface WalletInfo {
@@ -170,9 +173,18 @@ export const WalletComponent = (props: WalletComp) => {
     }, [user?.uuid]);
 
     useEffect(() => { fetchWallets(); }, [fetchWallets]);
+    console.log({ props, wallets })
+    useEffect(() => {
+        props?.onEVMWallet?.(wallets?.evm)
+        props?.onNearWallet?.(wallets?.near)
+    }, [wallets, props.onEVMWallet, props.onNearWallet])
 
-    useEffect(() => { saveWallets('evm', wallets.evm); }, [wallets.evm, saveWallets]);
-    useEffect(() => { saveWallets('near', wallets.near); }, [wallets.near, saveWallets]);
+    useEffect(() => {
+        saveWallets('evm', wallets.evm);
+    }, [wallets.evm, saveWallets]);
+    useEffect(() => {
+        saveWallets('near', wallets.near);
+    }, [wallets.near, saveWallets]);
 
     useEffect(() => {
         if (isEvmConnected && evmAddress) {
@@ -281,7 +293,7 @@ export const WalletComponent = (props: WalletComp) => {
                         />
                     ))}
 
-                    {showAddOptions && (
+                    {(showAddOptions || sortedWallets.length === 0) && (
                         <AddWalletOptions
                             type={inEvm ? 'evm' : 'near'}
                             onConnectWallet={() => wallet.signIn()}
