@@ -2,14 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Card } from "./card";
 import { Provider as WalletCubidProvider } from "./provider";
 import { WalletComponent } from "./wallet";
-import { Provider } from "cubid-sdk";
 
 const FinalComponent = (props: any) => (
-    <Provider>
-        <WalletCubidProvider>
-            <WalletComponent {...props} />
-        </WalletCubidProvider>
-    </Provider>
+    <WalletCubidProvider>
+        <WalletComponent {...props} />
+    </WalletCubidProvider>
 )
 
 const meta = {

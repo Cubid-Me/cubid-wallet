@@ -1,17 +1,8 @@
 {
   "name": "cubid-wallet",
-  "version": "0.3.8",
+  "version": "0.4.9",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./styles.css": "./dist/styles.css"
-  },
   "scripts": {
     "build": "npm run build:lib && npm run build:css",
     "build:lib": "tsup ./index.tsx --dts --format esm,cjs",
@@ -23,6 +14,9 @@
     "build-storybook": "concurrently \"npm run build-storybook:css\" \"storybook build\"",
     "build-storybook:css": "tailwindcss -m -i ./src/tailwind-entry.css -o ./src/index.css"
   },
+  "files": [
+    "dist"
+  ],
   "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -94,5 +88,6 @@
   },
   "sideEffects": [
     "**/*.css"
-  ]
+  ],
+  "packageManager": "pnpm@10.2.1+sha512.398035c7bd696d0ba0b10a688ed558285329d27ea994804a52bad9167d8e3a72bcb993f9699585d3ca25779ac64949ef422757a6c31102c12ab932e5cbe5cc92"
 }
