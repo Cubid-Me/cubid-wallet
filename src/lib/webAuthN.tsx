@@ -31,6 +31,7 @@ interface EncryptedData {
     encryptionMethod: 'webauthn' | 'password';
     salt?: Uint8Array;
     ivForKeyEncryption?: Uint8Array;
+    credentialId: any
 }
 
 interface WebAuthnCredential {
@@ -43,9 +44,7 @@ export class WebAuthnCrypto {
     private credentialId: Uint8Array | null;
     private publicKey: CryptoKey | null;
     private db: IDBDatabase | null;
-    // Store the hash of the fallback password so that subsequent operations use the same password
     private fallbackPasswordHash: string | null = null;
-
     constructor() {
         this.credentialId = null;
         this.publicKey = null;
@@ -315,7 +314,8 @@ export class WebAuthnCrypto {
                 encryptedAesKey,
                 encryptionMethod,
                 salt,
-                ivForKeyEncryption
+                ivForKeyEncryption,
+                credentialId: this.credentialId
             });
 
             return true;
@@ -459,9 +459,7 @@ export class WebAuthnCrypto {
             request.onerror = () => reject(request.error);
         });
     }
-   
     // ─── NEW METHODS BELOW ─────────────────────────────────────────────
-
     /**
      * Encrypts the given plain text string using a fresh AES key.
      * Depending on availability, the AES key is either "protected" via WebAuthn (if available)
@@ -482,10 +480,8 @@ export class WebAuthnCrypto {
                 true,
                 ['encrypt', 'decrypt']
             );
-
             // Generate a random initialization vector for data encryption
             const iv = crypto.getRandomValues(new Uint8Array(12));
-
             // Encrypt the plain text string using AES-GCM
             const encryptedData = await crypto.subtle.encrypt(
                 {
@@ -495,12 +491,10 @@ export class WebAuthnCrypto {
                 aesKey,
                 new TextEncoder().encode(plainText)
             );
-
             let encryptedAesKey: ArrayBuffer;
             let encryptionMethod: 'webauthn' | 'password';
             let salt: Uint8Array | undefined;
             let ivForKeyEncryption: Uint8Array | undefined;
-
             if (this.publicKey) {
                 // If WebAuthn is available, simply export the AES key.
                 encryptedAesKey = await crypto.subtle.exportKey('raw', aesKey);
@@ -511,7 +505,6 @@ export class WebAuthnCrypto {
                 if (!password) {
                     throw new WebAuthnCryptoError('Password is required for encryption');
                 }
-
                 // Compute a hash of the entered password.
                 const passwordHash = await this.hashPassword(password);
                 if (this.fallbackPasswordHash) {
@@ -523,11 +516,9 @@ export class WebAuthnCrypto {
                     // Store the hash for future comparisons.
                     this.fallbackPasswordHash = passwordHash;
                 }
-
                 // Generate salt and IV for encrypting the AES key.
                 salt = crypto.getRandomValues(new Uint8Array(16));
                 ivForKeyEncryption = crypto.getRandomValues(new Uint8Array(12));
-
                 const derivedKey = await this.deriveKeyFromPassword(password, salt);
                 const exportedAesKey = await crypto.subtle.exportKey('raw', aesKey);
                 encryptedAesKey = await crypto.subtle.encrypt(
@@ -538,10 +529,8 @@ export class WebAuthnCrypto {
                     derivedKey,
                     exportedAesKey
                 );
-
                 encryptionMethod = 'password';
             }
-
             // Build the EncryptedData object and assign a fixed ID so it can be retrieved later.
             const encryptedDataObj: EncryptedData = {
                 id: 'encryptedString',
@@ -550,19 +539,17 @@ export class WebAuthnCrypto {
                 encryptedAesKey,
                 encryptionMethod,
                 salt,
-                ivForKeyEncryption
+                ivForKeyEncryption,
+                credentialId: this.credentialId
             };
-
             // Store the encrypted data in IndexedDB.
             await this.storeInIndexedDB<EncryptedData>('encryptedData', encryptedDataObj);
-
             // Return the encrypted data object.
             return encryptedDataObj;
         } catch (error) {
             throw new WebAuthnCryptoError(`Failed to encrypt string: ${error.message}`);
         }
     }
-
     /**
      * Decrypts the given EncryptedData object and returns the decrypted string.
      * If no parameter is provided, this function will attempt to retrieve the stored encrypted data (with key 'encryptedString')
@@ -582,29 +569,25 @@ export class WebAuthnCrypto {
             } else {
                 encryptedDataObj = encrypted;
             }
-
             let aesKey: CryptoKey;
-
             if (encryptedDataObj.encryptionMethod === 'webauthn') {
                 // WebAuthn decryption path.
-                if (!this.credentialId) {
+                if (!encryptedDataObj.credentialId) {
                     throw new WebAuthnCryptoError('No credential ID available for WebAuthn decryption.');
                 }
                 const assertionOptions: PublicKeyCredentialRequestOptions = {
                     challenge: crypto.getRandomValues(new Uint8Array(32)),
                     allowCredentials: [{
-                        id: this.credentialId,
+                        id: encryptedDataObj.credentialId,
                         type: 'public-key'
                     }],
                     userVerification: 'required',
                     timeout: 60000
                 };
-
                 // Request a WebAuthn assertion.
                 const assertion = await navigator.credentials.get({
                     publicKey: assertionOptions
                 }) as PublicKeyCredential;
-
                 // Import the AES key (assuming it was exported raw).
                 aesKey = await crypto.subtle.importKey(
                     'raw',
@@ -621,12 +604,10 @@ export class WebAuthnCrypto {
                 if (!encryptedDataObj.salt || !encryptedDataObj.ivForKeyEncryption) {
                     throw new WebAuthnCryptoError('Missing parameters for password-based decryption');
                 }
-
                 const password = prompt('Enter your password to decrypt the string:');
                 if (!password) {
                     throw new WebAuthnCryptoError('Password is required for decryption');
                 }
-
                 const passwordHash = await this.hashPassword(password);
                 if (!this.fallbackPasswordHash) {
                     // If no fallback password was stored yet, then save it.
@@ -637,7 +618,6 @@ export class WebAuthnCrypto {
                         throw new WebAuthnCryptoError('Incorrect password. Must use the same password as previously set.');
                     }
                 }
-
                 const derivedKey = await this.deriveKeyFromPassword(password, encryptedDataObj.salt);
                 const decryptedAesKey = await crypto.subtle.decrypt(
                     {
@@ -647,7 +627,6 @@ export class WebAuthnCrypto {
                     derivedKey,
                     encryptedDataObj.encryptedAesKey
                 );
-
                 aesKey = await crypto.subtle.importKey(
                     'raw',
                     decryptedAesKey,
@@ -659,7 +638,6 @@ export class WebAuthnCrypto {
                     ['decrypt']
                 );
             }
-
             // Decrypt the ciphertext using the imported AES key.
             const decryptedData = await crypto.subtle.decrypt(
                 {
@@ -669,13 +647,11 @@ export class WebAuthnCrypto {
                 aesKey,
                 encryptedDataObj.encryptedData
             );
-
             return new TextDecoder().decode(decryptedData);
         } catch (error) {
             throw new WebAuthnCryptoError(`Failed to decrypt string: ${error.message}`);
         }
     }
-
     /**
      * Helper method to hash a password using SHA-256.
      */

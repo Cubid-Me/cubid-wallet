@@ -1,6 +1,6 @@
 {
   "name": "cubid-wallet",
-  "version": "0.4.9",
+  "version": "0.6.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

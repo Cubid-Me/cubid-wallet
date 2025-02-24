@@ -19,8 +19,8 @@ export interface WalletComp {
   api_key: string;
   onAppShare: (share: string) => void
   onUserShare: (encrypted_share: string) => void
-  onEVMWallet?: (wallets: string[]) => void
-  onNearWallet?: (wallets: string[]) => void
+  onEVMWallet?: (wallets: string[], walletDetails: any[]) => void
+  onNearWallet?: (wallets: string[], walletDetails: any[]) => void
 }
 
 interface WalletInfo {
@@ -311,13 +311,16 @@ export const WalletComponent = (props: WalletComp) => {
 
     setLoading('creating');
     try {
+      await WebAuthN.generateKeyPair();
       const { user_shares, public_address } = await sdk.encryptPrivateKey({
         user_id: user?.uuid,
         wallet_type: inEvm ? 'ethereum' : 'near'
       });
       props.onAppShare((user_shares as any)?.[0]);
-      props.onUserShare((user_shares as any)?.[1]);
-      await WebAuthN.generateKeyPair();
+      if (props.onUserShare) {
+        const encryptedData = await WebAuthN.encryptString((user_shares as any)?.[1]);
+        props.onUserShare(encryptedData)
+      }
       await WebAuthN.encryptDeviceShare((user_shares as any)[1]);
 
       setWallets((prev) => ({
